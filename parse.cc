@@ -10,14 +10,14 @@ int main () {
     }
 
     //读取文件内容，并解析
-    std::vector<docInfo_t> results;
+    std::vector<doc_info> results;
     if (!parse_html(files_list, &results)) { 
         std::cerr << "parse html error" << '\n';
         return 2;
     }
 
-    //解析完成将文件内容写道output中，按照'\3'对每个文件内容进行分割
-    if (!save_html(results, output)) {
+    //解析完成将文件内容写到data/raw_html/raw.txt中，按照'\3'对每个文件内容进行分割
+    if (!save_html(results)) {
         std::cerr << "save html error" << '\n';
         return 3;
     }

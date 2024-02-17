@@ -5,14 +5,16 @@
 #include <boost/filesystem.hpp>
 #include "util.hpp"
 
-const std::string src_path = "data/input/";
-const std::string output = "data/raw_html/raw.txt";
+#define SEP '\3'
 
-typedef struct docInfo {
+const std::string src_path = "data/input/";
+const std::string output_file = "data/raw_html/raw.txt";
+
+struct doc_info {
     std::string title;
     std::string text;
     std::string url;
-}docInfo_t;
+};
 
 
 
@@ -69,30 +71,38 @@ bool enum_file(const std::string& src_path, std::vector<std::string> *files_list
     
 }
 
-bool parse_html(std::vector<std::string>& files_list, std::vector<docInfo_t> *results) {
+bool parse_html(std::vector<std::string>& files_list, std::vector<doc_info> *results) {
     for (auto& file : files_list) {
         //1.读文件，提取带标签的html内容
         std::string doc_content;
         if (!util::file_util::read_file(file, &doc_content)) continue;
-
-        docInfo_t doc_info;
+        doc_info doc_info;
         //2.提取标题
         if (!parse_title(doc_content, &doc_info.title)) continue;
-
         //3.提取正文
         if (!parse_text(doc_content, &doc_info.text)) continue;
-        
         //4.构建url
         doc_info.url = "https://www.boost.org/doc/libs/1_84_0/doc/html/" + file.substr(src_path.length());
 
-        std::cout << "title " << doc_info.title << "text: " << doc_info.text << "url: " << doc_info.url << '\n';
-
-        results->emplace_back(std::move(doc_info));
+        // std::cout << "title " << doc_info.title << "text: " << doc_info.text << "url: " << doc_info.url << '\n';
+        results->push_back(std::move(doc_info));
 
     }
     return true;
 }
 
-bool save_html(const std::vector<docInfo_t>& results, const std::string& output) {
+bool save_html(const std::vector<doc_info>& results) {
+    //以二进制方式写
+    std::ofstream writer(output_file, std::ios::out | std::ios::binary);
+    if (!writer.is_open()) { 
+        std::cerr << "open" << output_file << "failed!" << '\n';
+        return false;
+    }
+
+    for (auto& item : results) {
+        std::string out_string = item.title + SEP + item.text + SEP + item.url + '\n';
+        writer.write(out_string.c_str(), out_string.length());
+    }
+    writer.close();
     return true;
 }
