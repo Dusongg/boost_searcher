@@ -4,11 +4,12 @@
 #include <iostream>
 #include <fstream>
 #include <unordered_map>
+#include <mutex>
+// #include <format>
 #include "util.hpp"
 // #include "parse.hpp"
 
 namespace ns_index {
-    using inverte_list = std::vector<inverte_elem>;
     struct doc_info {
         std::string title;
         std::string text;
@@ -20,11 +21,32 @@ namespace ns_index {
         std::string word;
         int weights;        // 暂时由word在标题中出现的次数和正文中出现的次数决定
     };
+    using inverte_list = std::vector<inverte_elem>;
+
+    struct word_frequency {
+        word_frequency() : title_cnt(0), text_cnt(0) {}
+        int title_cnt;
+        int text_cnt;
+    };
 
     class index {
-    public:
+    private:
         index() = default;
+        index(const index&) = delete;
+        index& operator=(const index&) = delete;
+        static index* instance;
+
+    public:
         ~index() = default;
+        static index* get_instance() {
+            if (instance == nullptr) {
+                std::lock_guard<std::mutex> lock(init_mutex);
+                if (instance == nullptr) {
+                    instance = new index;
+                }
+            }
+            return instance;
+        }
         //更具id找到文档内容
         doc_info* get_forward_index(uint64_t doc_id) {
             if (doc_id >= forward_index.size()) {
@@ -37,7 +59,7 @@ namespace ns_index {
         inverte_list* get_inverte_list(const std::string &keyword) {
             auto it = inverte_index.find(keyword);
             if (it == inverte_index.end()) {
-                std::cerr << keyword << "have no inverte_list" << '\n';
+                std::cerr << keyword << " have no inverte_list" << '\n';
                 return nullptr;
             }
             return &(it->second);
@@ -51,34 +73,62 @@ namespace ns_index {
                 return false;
             }
             std::string line;
+            // int cnt = 0;
             while(std::getline(reader, line)) {
                 doc_info* ret = build_forward_index(line);
                 if (ret == nullptr) {
-                    std::cerr << "build" << line << "error";    //for debug
+                    std::cerr << "build error";    //for debug
                     continue;
                 }
                 build_inverte_list(*ret);
+                // std::cout << std::format("已建立{}条索引!\n", ++cnt);
             }
+            return true;
         }
     private:
         doc_info* build_forward_index(const std::string& line) {
             doc_info doc;
-            char sep = '\3';
-            if (util::string_util::substring(line, &doc, sep)) { return nullptr; }
+            std::string sep = "\3";
+            std::vector<std::string> twu;
+            if (!ns_util::string_util::substring(line, &twu, sep)) { return nullptr; }
+            doc.title = twu[0];
+            doc.text = twu[1];
+            doc.url = twu[2];
             doc.doc_id = forward_index.size();
             forward_index.push_back(std::move(doc));
             return &forward_index.back();
         }
-        bool build_inverte_list(const doc_info& odc) {
+        bool build_inverte_list(const doc_info& doc) {
              //jieba分词
-            
-             //词频统计
-
-             //填入inverte_index
+            std::vector<std::string> title_words, text_words;
+            ns_util::jieba_util::cut_string(doc.title, &title_words);
+            ns_util::jieba_util::cut_string(doc.text, &text_words);
+             //词频统计 
+            std::unordered_map<std::string, word_frequency> word_cnt;
+            for (auto& word : title_words) {
+                boost::to_lower(word);
+                word_cnt[word].title_cnt++;
+            } 
+            for (auto& word : text_words) {
+                boost::to_lower(word);
+                word_cnt[word].text_cnt++;
+            }
+            //填入inverte_index
+            for (auto& [word, cnt] : word_cnt) {
+                inverte_elem e;
+                e.doc_id = doc.doc_id;
+                e.word = word;
+                e.weights = 5 * cnt.title_cnt + 1 * cnt.text_cnt;
+                inverte_index[word].push_back(std::move(e));
+            } 
+            return true;
         }
 
     private:
         std::vector<doc_info> forward_index;    //正排索引
         std::unordered_map<std::string, inverte_list> inverte_index;   //倒排索引
+        static std::mutex init_mutex;
     };
+    index* index::instance = nullptr;
+    std::mutex index::init_mutex;
 }

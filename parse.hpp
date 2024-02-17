@@ -41,7 +41,7 @@ bool parse_text(const std::string& content, std::string *text) {
         else if (st == TEXT) {
             if (c == '<') { st = LABLE; }
             else { 
-                if (c == '\n') { c == ' '; }
+                if (c == '\n') { c = ' '; }
                 *text += c; 
             }
         }
@@ -75,7 +75,7 @@ bool parse_html(std::vector<std::string>& files_list, std::vector<doc_info> *res
     for (auto& file : files_list) {
         //1.读文件，提取带标签的html内容
         std::string doc_content;
-        if (!util::file_util::read_file(file, &doc_content)) continue;
+        if (!ns_util::file_util::read_file(file, &doc_content)) continue;
         doc_info doc_info;
         //2.提取标题
         if (!parse_title(doc_content, &doc_info.title)) continue;

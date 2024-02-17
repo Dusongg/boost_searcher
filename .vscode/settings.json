@@ -60,6 +60,9 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "slist": "cpp"
-    }
+        "slist": "cpp",
+        "concepts": "cpp",
+        "string_view": "cpp"
+    },
+    "cmake.sourceDirectory": "/home/Dusong/boost_searcher/cppjieba"
 }
