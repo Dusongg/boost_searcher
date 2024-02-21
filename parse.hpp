@@ -41,7 +41,7 @@ bool parse_text(const std::string& content, std::string *text) {
         else if (st == TEXT) {
             if (c == '<') { st = LABLE; }
             else { 
-                if (c == '\n') { c = ' '; }
+                if (c == '\n') { c = ' '; }   //将正文中的换行符换成空格
                 *text += c; 
             }
         }

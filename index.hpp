@@ -7,6 +7,7 @@
 #include <mutex>
 // #include <format>
 #include "util.hpp"
+#include <cstdio>
 // #include "parse.hpp"
 
 namespace ns_index {
@@ -66,6 +67,7 @@ namespace ns_index {
         }
 
         //由data/raw.html/raw.txt文档内容构建倒排正排
+        #define TOL_HTML 8586
         bool build_index(const std::string &file) {
             std::ifstream reader(file, std::ios::in | std::ios::binary);
             if (!reader.is_open()) {
@@ -73,16 +75,26 @@ namespace ns_index {
                 return false;
             }
             std::string line;
-            // int cnt = 0;
+            //打印建立索引进度条
+            std::cout << "正在建立索引" << '\n';
+            int cnt = 0;
+            char schedule[102]{'\0'};
+            char cursor[4]{'|', '/', '-', '\\'};
             while(std::getline(reader, line)) {
+                cnt++;
+                printf("[%-100s][%%%d][%c]\r", schedule, cnt * 100 / TOL_HTML, cursor[cnt%4]);
+
                 doc_info* ret = build_forward_index(line);
                 if (ret == nullptr) {
                     std::cerr << "build error";    //for debug
                     continue;
                 }
                 build_inverte_list(*ret);
+
+                schedule[cnt * 100 / TOL_HTML] = '#';
                 // std::cout << std::format("已建立{}条索引!\n", ++cnt);
             }
+            std::cout << "\n索引建立完毕！"  << std::endl;
             return true;
         }
     private:
