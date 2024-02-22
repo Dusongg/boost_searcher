@@ -2,9 +2,122 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>⭐</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <title>boost 搜索引擎</title>
+    <style>
+        * {
+            margin:0;
+            padding:0;
+        }
+        html,
+        body {
+            height:1000;
+        } 
+        .container {
+            width:800px;
+            margin: 0px auto;
+            margin-top: 15px;
+        }
+        .container .search {
+            width: 100%;
+            height: 52px;
+        }
+        .container .search input {
+            float: left;
+            width: 600px;
+            height: 50px;
+            border: 1px solid rgb(185, 185, 185);
+            border-right: none;
+            color: rgb(109, 109, 109);
+            font-size: 15px;
+
+        }
+        .container .search button {
+            float: left;
+            width: 120px;
+            height: 52px;
+            border: 1px solid rgb(185, 185, 185);
+            background-color: aliceblue;
+            color: rgb(33, 155, 236);
+            font-size: 19px;
+        }
+        .container .result {
+            width: 100%;
+        }
+        .container .result .item {
+            margin-top: 10px;
+        }
+        .container .result .item a {
+            display: block;
+            text-decoration: none;
+            font-size:18px;
+            color:rgb(85, 190, 216);
+        }
+        .container .result .item a:hover {
+            text-decoration: underline;
+        }
+        .container .result .item p {
+            margin-top: 5px;
+            text-decoration: none;
+            font-size:15px;
+        }
+        .container .result .item i {
+            display: block;
+            font-style: normal;
+            color: rgb(194, 191, 191);
+        }
+    </style>
 </head>
 <body>
-    <h1>么么么</h1>
+    <div class="container">
+        <div class="search">
+            <input type="text">
+            <button onclick="Search()">Search</button>
+        </div>
+        <div class="result">
+            
+        </div>
+    </div>
+    <script>
+        function Search() {
+            let query = $(".container .search input").val();
+            console.log("query = " +query);
+
+            $.ajax({
+                type: "GET",
+                url: "/s?word=" + query,
+                success: function(data) {
+                    console.log(data);
+                    BuildHtml(data);
+                }
+            });
+        }
+        function BuildHtml(data) {
+            let result_lable = $(".container .result");
+            result_lable.empty();
+
+            for (let elem of data) {
+                let a_lable =$("<a>", {
+                    text: elem.title,
+                    href: elem.url,
+                    target: "_blank"
+                });
+                let p_lable = $("<p>", {
+                    text: elem.desc
+                });
+                let i_lable = $("<i>", {
+                    text: elem.url
+                });
+                let div_lable = $("<div>", {
+                    class: "item"
+                });
+                a_lable.appendTo(div_lable);
+                p_lable.appendTo(div_lable);
+                i_lable.appendTo(div_lable);
+                div_lable.appendTo(result_lable);
+            }
+        }
+    </script>
 </body>
 </html>

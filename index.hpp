@@ -5,10 +5,9 @@
 #include <fstream>
 #include <unordered_map>
 #include <mutex>
-// #include <format>
 #include "util.hpp"
 #include <cstdio>
-// #include "parse.hpp"
+#include <chrono>
 
 namespace ns_index {
     struct doc_info {
@@ -76,10 +75,12 @@ namespace ns_index {
             }
             std::string line;
             //打印建立索引进度条
-            std::cout << "正在建立索引" << '\n';
+            std::cout << "Indexing" << '\n';
             int cnt = 0;
             char schedule[102]{'\0'};
             char cursor[4]{'|', '/', '-', '\\'};
+            auto start_time = std::chrono::steady_clock::now();
+
             while(std::getline(reader, line)) {
                 cnt++;
                 printf("[%-100s][%%%d][%c]\r", schedule, cnt * 100 / TOL_HTML, cursor[cnt%4]);
@@ -94,7 +95,9 @@ namespace ns_index {
                 schedule[cnt * 100 / TOL_HTML] = '#';
                 // std::cout << std::format("已建立{}条索引!\n", ++cnt);
             }
-            std::cout << "\n索引建立完毕！"  << std::endl;
+            auto end_time = std::chrono::steady_clock::now();
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
+            std::cout << "\nIndex creation completed, " << seconds << " s "<< '\n';
             return true;
         }
     private:
@@ -117,6 +120,7 @@ namespace ns_index {
             ns_util::jieba_util::cut_string(doc.text, &text_words);
              //词频统计 
             std::unordered_map<std::string, word_frequency> word_cnt;
+            
             for (auto& word : title_words) {
                 boost::to_lower(word);
                 word_cnt[word].title_cnt++;

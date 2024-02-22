@@ -23,7 +23,7 @@ namespace ns_searcher {
                 if (list == nullptr) {
                     continue;
                 }
-                inverte_elems.insert(inverte_elems.end(), list->begin(), list->end());
+                inverte_elems.insert(inverte_elems.end(), list->begin(), list->end());   //重复问题
             }
 
             //3. 排序
@@ -55,7 +55,7 @@ namespace ns_searcher {
             int pos = std::distance(text.begin(), it);
             int st_pos = std::max(0, pos - 50), end_pos = std::min(pos + 100, (int)text.size());
 
-            return text.substr(st_pos, end_pos - st_pos);
+            return text.substr(st_pos, end_pos - st_pos) + "...";
         }
         void init(const std::string& file_path) {
             id = ns_index::index::get_instance();
