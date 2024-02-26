@@ -1,7 +1,7 @@
 #include "index.hpp"
 #include <jsoncpp/json/json.h>
 #include <algorithm>
-
+#include <set>
 namespace ns_searcher {
     class searcher {
     public:
@@ -15,7 +15,8 @@ namespace ns_searcher {
             std::vector<std::string> words;
             ns_util::jieba_util::cut_string(qurey, &words);
             //2.根据分词查找index
-            inverte_list inverte_elems;
+            auto comp = [](const auto& lsh, const auto& rsh) -> bool { return lsh.weights > rsh.weights; };
+            std::set<ns_index::inverte_elem, decltype(comp)> inverte_elems(comp);
             for (auto &word : words) {
                 boost::to_lower(word);
                 // std::unordered_map<uint64_t, int> id_weights;       //将iverte_elems中相同doc_id的weights相加
@@ -23,13 +24,9 @@ namespace ns_searcher {
                 if (list == nullptr) {
                     continue;
                 }
-                inverte_elems.insert(inverte_elems.end(), list->begin(), list->end());   //重复问题
+                inverte_elems.insert(list->begin(), list->end());   //重复问题
             }
 
-            //3. 排序
-            std::ranges::sort(inverte_elems, [](const ns_index::inverte_elem &lsh, const ns_index::inverte_elem &rsh) {
-                return lsh.weights > rsh.weights;
-            });
             //4. 构建json
             Json::Value root;
             for (auto &inverte_elem : inverte_elems) {
