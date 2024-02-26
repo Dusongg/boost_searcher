@@ -56,7 +56,14 @@ namespace ns_searcher {
         }
         void init(const std::string& file_path) {
             id = ns_index::index::get_instance();
-            id->build_index(file_path);
+
+            std::cout << "Indexing" << '\n';
+            auto start_time = std::chrono::steady_clock::now();
+            //建立索引
+            id->build_index(file_path);     
+            auto end_time = std::chrono::steady_clock::now();
+            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
+            std::cout << "\nIndex creation completed, " << seconds << " s "<< '\n';
         }
         ns_index::index* id;
     };

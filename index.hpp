@@ -8,6 +8,7 @@
 #include "util.hpp"
 #include <cstdio>
 #include <chrono>
+#include "ThreadPool.hpp"
 
 namespace ns_index {
     struct doc_info {
@@ -29,7 +30,13 @@ namespace ns_index {
         int text_cnt;
     };
 
+    //声明，用于线程调用
+    bool task(int, const std::string&);
+
     class index {
+        friend bool task(int, const std::string&);
+        friend doc_info* build_forward_index(const std::string&);
+        friend bool build_inverte_list(const doc_info&);
     private:
         index() = default;
         index(const index&) = delete;
@@ -75,76 +82,92 @@ namespace ns_index {
             }
             std::string line;
             //打印建立索引进度条
-            std::cout << "Indexing" << '\n';
-            int cnt = 0;
-            char schedule[102]{'\0'};
-            char cursor[4]{'|', '/', '-', '\\'};
-            auto start_time = std::chrono::steady_clock::now();
-
+            //初始化线程池
+            ctpl::thread_pool tp(1);
             while(std::getline(reader, line)) {
-                cnt++;
-                printf("[%-100s][%%%d][%c]\r", schedule, cnt * 100 / TOL_HTML, cursor[cnt%4]);
-
-                doc_info* ret = build_forward_index(line);
-                if (ret == nullptr) {
-                    std::cerr << "build error";    //for debug
-                    continue;
-                }
-                build_inverte_list(*ret);
-
-                schedule[cnt * 100 / TOL_HTML] = '#';
-                // std::cout << std::format("已建立{}条索引!\n", ++cnt);
+                tp.push(task, line);
             }
-            auto end_time = std::chrono::steady_clock::now();
-            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
-            std::cout << "\nIndex creation completed, " << seconds << " s "<< '\n';
-            return true;
-        }
-    private:
-        doc_info* build_forward_index(const std::string& line) {
-            doc_info doc;
-            std::string sep = "\3";
-            std::vector<std::string> twu;
-            if (!ns_util::string_util::substring(line, &twu, sep)) { return nullptr; }
-            doc.title = twu[0];
-            doc.text = twu[1];
-            doc.url = twu[2];
-            doc.doc_id = forward_index.size();
-            forward_index.push_back(std::move(doc));
-            return &forward_index.back();
-        }
-        bool build_inverte_list(const doc_info& doc) {
-             //jieba分词
-            std::vector<std::string> title_words, text_words;
-            ns_util::jieba_util::cut_string(doc.title, &title_words);
-            ns_util::jieba_util::cut_string(doc.text, &text_words);
-             //词频统计 
-            std::unordered_map<std::string, word_frequency> word_cnt;
-            
-            for (auto& word : title_words) {
-                boost::to_lower(word);
-                word_cnt[word].title_cnt++;
-            } 
-            for (auto& word : text_words) {
-                boost::to_lower(word);
-                word_cnt[word].text_cnt++;
-            }
-            //填入inverte_index
-            for (auto& [word, cnt] : word_cnt) {
-                inverte_elem e;
-                e.doc_id = doc.doc_id;
-                e.word = word;
-                e.weights = 5 * cnt.title_cnt + 1 * cnt.text_cnt;
-                inverte_index[word].push_back(std::move(e));
-            } 
             return true;
         }
 
     private:
-        std::vector<doc_info> forward_index;    //正排索引
-        std::unordered_map<std::string, inverte_list> inverte_index;   //倒排索引
+        static uint64_t cnt_complete;
+        static std::vector<doc_info> forward_index;    //正排索引
+        static std::unordered_map<std::string, inverte_list> inverte_index;   //倒排索引
         static std::mutex init_mutex;
+        static std::mutex forward_index_mutex;
+        static std::mutex inverte_index_mutex;
+        static std::mutex cnt_mutex;
+
     };
+    //类外初始化静态成员
+    uint64_t index::cnt_complete = 0;
     index* index::instance = nullptr;
     std::mutex index::init_mutex;
+    std::mutex index::forward_index_mutex;
+    std::mutex index::inverte_index_mutex;
+    std::mutex index::cnt_mutex;
+
+    std::vector<doc_info> index::forward_index; 
+    std::unordered_map<std::string, inverte_list> index::inverte_index; 
+        
+    doc_info* build_forward_index(const std::string& line) {
+        doc_info doc;
+        std::string sep = "\3";
+        std::vector<std::string> twu;
+        if (!ns_util::string_util::substring(line, &twu, sep)) { return nullptr; }
+        doc.title = twu[0];
+        doc.text = twu[1];
+        doc.url = twu[2];
+
+        std::lock_guard<std::mutex> lock(index::forward_index_mutex);
+        doc.doc_id = index::forward_index.size();
+        index::forward_index.push_back(std::move(doc));
+        return &index::forward_index.back();   
+    }
+    bool build_inverte_list(const doc_info& doc) {
+            //jieba分词
+        std::vector<std::string> title_words, text_words;
+        ns_util::jieba_util::cut_string(doc.title, &title_words);
+        ns_util::jieba_util::cut_string(doc.text, &text_words);
+            //词频统计 
+        std::unordered_map<std::string, word_frequency> word_cnt;
+        
+        for (auto& word : title_words) {
+            boost::to_lower(word);
+            word_cnt[word].title_cnt++;
+        } 
+        for (auto& word : text_words) {
+            boost::to_lower(word);
+            word_cnt[word].text_cnt++;
+        }
+        //填入inverte_index
+        for (auto& [word, cnt] : word_cnt) {
+            inverte_elem e;
+            e.doc_id = doc.doc_id;
+            e.word = word;
+            e.weights = 5 * cnt.title_cnt + 1 * cnt.text_cnt;
+            index::inverte_index_mutex.lock();
+            index::inverte_index[word].push_back(std::move(e));
+            index::inverte_index_mutex.unlock();
+        } 
+        return true;
+    }
+    char cursor[4]{'|', '/', '-', '\\'};
+    char schedule[102]{'\0'};
+
+    bool task(int id, const std::string& line) {
+        doc_info* ret = build_forward_index(line);
+        if (ret == nullptr) {
+            std::cerr << "build error";   
+            return false; 
+        }
+        build_inverte_list(*ret);
+        std::lock_guard<std::mutex> lock(index::cnt_mutex);
+        schedule[index::cnt_complete * 100 / TOL_HTML] = '#';
+        index::cnt_complete++;
+        printf("[%-100s][%%%d][%c]\r", schedule, index::cnt_complete * 100 / TOL_HTML, cursor[index::cnt_complete%4]);
+
+        return true;
+    }
 }

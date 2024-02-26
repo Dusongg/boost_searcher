@@ -5,7 +5,7 @@ parse:parse.cc
 	g++ -o $@ $^ -std=c++20 -lboost_system -lboost_filesystem
 
 search_server:searcher_debug.cc
-	g++ -o $@ $^ -std=c++20 -ljsoncpp
+	g++ -o $@ $^ -std=c++20 -ljsoncpp -lpthread
 
 
 http_server:httpserver.cc
