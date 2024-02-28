@@ -127,8 +127,8 @@ namespace ns_index {
     }
     bool build_inverte_list(const doc_info& doc) {
         //jieba分词
-        std::unique_ptr<std::vector<std::string>> title_words(new std::vector<std::string>>());
-        std::unique_ptr<std::vector<std::string>> text_words(new std::vector<std::string>>());
+        std::unique_ptr<std::vector<std::string>> title_words(new std::vector<std::string>);
+        std::unique_ptr<std::vector<std::string>> text_words(new std::vector<std::string>);
         // std::vector<std::string> *title_words = new std::vector<std::string>();
         // std::vector<std::string> *text_words = new std::vector<std::string>();
         cppjieba::Jieba jieba(DICT_PATH,HMM_PATH,USER_DICT_PATH,IDF_PATH,STOP_WORD_PATH);
@@ -142,7 +142,7 @@ namespace ns_index {
             text_words->push_back(std::to_string(i));
         }
         //词频统计 
-        std::unique_ptr<std::unordered_map<std::string, word_frequency> word_cnt(new std::unordered_map<std::string, word_frequency>());
+        std::unique_ptr<std::unordered_map<std::string, word_frequency>> word_cnt(new std::unordered_map<std::string, word_frequency>);
         // std::unordered_map<std::string, word_frequency>* word_cnt = new std::unordered_map<std::string, word_frequency>();
         
         for (auto& word : *title_words) {
