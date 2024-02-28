@@ -7,6 +7,13 @@
 #include <boost/algorithm/string.hpp>
 #include "jieba_include/Jieba.hpp"
 
+//jieba
+const char* const DICT_PATH = "./dict/jieba.dict.utf8";
+const char* const HMM_PATH = "./dict/hmm_model.utf8";
+const char* const USER_DICT_PATH = "./dict/user.dict.utf8";
+const char* const IDF_PATH = "./dict/idf.utf8";
+const char* const STOP_WORD_PATH = "./dict/stop_words.utf8";
+
 namespace ns_util {
     class file_util {
     public:
@@ -33,11 +40,7 @@ namespace ns_util {
         }
     };
 
-    const char* const DICT_PATH = "./dict/jieba.dict.utf8";
-    const char* const HMM_PATH = "./dict/hmm_model.utf8";
-    const char* const USER_DICT_PATH = "./dict/user.dict.utf8";
-    const char* const IDF_PATH = "./dict/idf.utf8";
-    const char* const STOP_WORD_PATH = "./dict/stop_words.utf8";
+
 
     class jieba_util {
     public:

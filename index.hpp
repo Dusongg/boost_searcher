@@ -8,6 +8,7 @@
 #include "util.hpp"
 #include <cstdio>
 #include <chrono>
+#include <memory>
 #include "ThreadPool.hpp"
 
 namespace ns_index {
@@ -81,9 +82,8 @@ namespace ns_index {
                 return false;
             }
             std::string line;
-            //打印建立索引进度条
             //初始化线程池
-            ctpl::thread_pool tp(1);
+            ctpl::thread_pool tp(3);
             while(std::getline(reader, line)) {
                 tp.push(task, line);
             }
@@ -126,23 +126,35 @@ namespace ns_index {
         return &index::forward_index.back();   
     }
     bool build_inverte_list(const doc_info& doc) {
-            //jieba分词
-        std::vector<std::string> title_words, text_words;
-        ns_util::jieba_util::cut_string(doc.title, &title_words);
-        ns_util::jieba_util::cut_string(doc.text, &text_words);
-            //词频统计 
-        std::unordered_map<std::string, word_frequency> word_cnt;
+        //jieba分词
+        std::unique_ptr<std::vector<std::string>> title_words(new std::vector<std::string>>());
+        std::unique_ptr<std::vector<std::string>> text_words(new std::vector<std::string>>());
+        // std::vector<std::string> *title_words = new std::vector<std::string>();
+        // std::vector<std::string> *text_words = new std::vector<std::string>();
+        cppjieba::Jieba jieba(DICT_PATH,HMM_PATH,USER_DICT_PATH,IDF_PATH,STOP_WORD_PATH);
+        // jieba.CutForSearch(doc.title, *title_words);
+        // jieba.CutForSearch(doc.text, *text_words);
+
+        for (int i = 0; i < 100; i++) {
+            title_words->push_back(std::to_string(i));
+        }
+        for (int i = 0; i < 100; i++) {
+            text_words->push_back(std::to_string(i));
+        }
+        //词频统计 
+        std::unique_ptr<std::unordered_map<std::string, word_frequency> word_cnt(new std::unordered_map<std::string, word_frequency>());
+        // std::unordered_map<std::string, word_frequency>* word_cnt = new std::unordered_map<std::string, word_frequency>();
         
-        for (auto& word : title_words) {
+        for (auto& word : *title_words) {
             boost::to_lower(word);
-            word_cnt[word].title_cnt++;
+            (*word_cnt)[word].title_cnt++;
         } 
-        for (auto& word : text_words) {
+        for (auto& word : *text_words) {
             boost::to_lower(word);
-            word_cnt[word].text_cnt++;
+            (*word_cnt)[word].text_cnt++;
         }
         //填入inverte_index
-        for (auto& [word, cnt] : word_cnt) {
+        for (auto& [word, cnt] : *word_cnt) {
             inverte_elem e;
             e.doc_id = doc.doc_id;
             e.word = word;
@@ -162,12 +174,12 @@ namespace ns_index {
             std::cerr << "build error";   
             return false; 
         }
-        build_inverte_list(*ret);
-        std::lock_guard<std::mutex> lock(index::cnt_mutex);
+        build_inverte_list(*ret);·
+        index::cnt_mutex.lock();
         schedule[index::cnt_complete * 100 / TOL_HTML] = '#';
         index::cnt_complete++;
         printf("[%-100s][%%%d][%c]\r", schedule, index::cnt_complete * 100 / TOL_HTML, cursor[index::cnt_complete%4]);
-
+        index::cnt_mutex.unlock();
         return true;
     }
 }
