@@ -62,7 +62,20 @@
         "valarray": "cpp",
         "slist": "cpp",
         "concepts": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "bit": "cpp",
+        "compare": "cpp",
+        "map": "cpp",
+        "set": "cpp",
+        "string": "cpp",
+        "algorithm": "cpp",
+        "iterator": "cpp",
+        "memory": "cpp",
+        "memory_resource": "cpp",
+        "random": "cpp",
+        "numbers": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp"
     },
     "cmake.sourceDirectory": "/home/Dusong/boost_searcher/cppjieba"
 }

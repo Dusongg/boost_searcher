@@ -18,7 +18,7 @@ namespace ns_index {
     };
     struct inverte_elem {
         uint64_t doc_id;
-        std::string word;
+        std::string word;       //用于摘要
         int weights;        // 暂时由word在标题中出现的次数和正文中出现的次数决定
     };
     using inverte_list = std::vector<inverte_elem>;
@@ -101,7 +101,7 @@ namespace ns_index {
             return true;
         }
     private:
-        doc_info* build_forward_index(const std::string& line) {
+        doc_info* build_forward_index(const std::string& line) {           
             doc_info doc;
             std::string sep = "\3";
             std::vector<std::string> twu;
@@ -113,6 +113,8 @@ namespace ns_index {
             forward_index.push_back(std::move(doc));
             return &forward_index.back();
         }
+
+        //一句话->分成多个词->建立词到doc_id以及weights的映射
         bool build_inverte_list(const doc_info& doc) {
              //jieba分词
             std::vector<std::string> title_words, text_words;

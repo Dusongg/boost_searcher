@@ -4,6 +4,11 @@
 const std::string file_path = "data/raw_html/raw.txt";
 const std::string root_html = "./wwwroot";
 
+
+
+//todo:
+//1.热词统计：优先队列
+//2.网站登录注册，mysql
 int main() {
     ns_searcher::searcher sc(file_path);
     httplib::Server svr;
